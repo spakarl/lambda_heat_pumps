@@ -4,7 +4,7 @@ title: "Sensoren-Übersicht - Technische Dokumentation"
 
 # Sensoren-Übersicht - Technische Dokumentation
 
-*Zuletzt geändert am 06.09.2026*
+*Zuletzt geändert am 12.09.2026*
 
 **Stand:** Release 3.5.2 (Rewrite auf [`modbus-connection`](https://github.com/home-assistant-libs/modbus-connection)/`tmodbus`, Branch `3.5`; Hintergrund zum Rewrite: [Issue #99](https://github.com/GuidoJeuken-6512/lambda_heat_pumps/issues/99))
 
@@ -184,7 +184,7 @@ Integration liest das als `unknown`, nicht als -1 °C/kW (siehe
 | `eu08l_hc1_room_device_temperature` | `room_device_temperature` | 4 | 0.1 | measurement | temperature | Room Device Temperature (auch von climate-Entities gelesen) |
 | `eu08l_hc1_set_flow_line_temperature` | `set_flow_line_temperature` | 5 | 0.1 | measurement | temperature | Set Flow Line Temperature |
 | `eu08l_hc1_operating_mode` | `operating_mode` | 6 | 1 | - | enum | Operating Mode |
-| `eu08l_hc1_flow_line_temperature_setpoint` | `flow_line_temperature_setpoint` | 7 | 0.1 | measurement | temperature | Flow Line Temperature Setpoint (schreibbar) |
+| `eu08l_hc1_flow_line_temperature_setpoint` | `flow_line_temperature_setpoint` | 7 | 0.1 | measurement | temperature | Flow Line Temperature Setpoint (schreibbar) — **nur Firmware ≤ 2**, ab Firmware 3 abgelöst durch `target_temp_flow_line` ([Issue #112](https://github.com/GuidoJeuken-6512/lambda_heat_pumps/issues/112)) |
 | `eu08l_hc1_target_temp_flow_line` | `target_temp_flow_line` | 7 | 0.1 | measurement | temperature | Target Flow Line Temperature — **nur Firmware ≥ 3**, read-only, gleiches Register wie oben |
 | `eu08l_hc1_set_flow_line_offset_temperature` | `set_flow_line_offset_temperature` | 50 | 0.1 | measurement | temperature | Set Flow Line Offset Temperature (auch als `number`-Entity) |
 | `eu08l_hc1_target_room_temperature` | `target_room_temperature` | 51 | 0.1 | measurement | temperature | Target Room Temperature (auch von climate-Entity geschrieben) |

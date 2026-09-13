@@ -7,6 +7,16 @@
 
 > **📚 Documentation**: A German documentation is currently being built at [https://guidojeuken-6512.github.io/lambda_heat_pumps](https://guidojeuken-6512.github.io/lambda_heat_pumps)
 
+### [3.5.5] - 2026-09-12
+
+Fixed a register conflict reported for firmware 3+ controllers ([Issue #112](https://github.com/GuidoJeuken-6512/lambda_heat_pumps/issues/112)).
+
+#### Fixed
+- **Heating-circuit register 7 was modelled by two sensors with overlapping firmware ranges**: from firmware 3 on, the controller repurposes this address from the writable setpoint request (`flow_line_temperature_setpoint`) to the read-only value the controller actually acts on (`target_temp_flow_line`, added with `firmware_version=3`). `flow_line_temperature_setpoint` had no upper firmware bound, so on firmware 3+ both sensors were created against the same register — the reporter observed `flow_line_temperature_setpoint` showing no values there. `flow_line_temperature_setpoint` is now restricted to `firmware_versions=("1-2",)`, matching the reporter's own suggested fix and the range on which the register still means what its name says.
+
+#### Tests
+- Added `test_a_register_that_changed_meaning_is_not_double_modelled` in `tests/test_init.py`, covering both sides of the boundary: on `V0.0.8-3K` (firmware 6, past the repurposing) only `target_temp_flow_line` is created for HC1; on `V0.0.4-3K` (firmware 2, before it) only `flow_line_temperature_setpoint` is created — modelled after the existing `test_a_register_its_firmware_withdrew_is_not_modelled`.
+
 ### [3.5.4] - 2026-09-09
 
 Fixed a second Home Assistant deprecation warning, surfaced by auditing the real system log of two live installations after a Home Assistant 2026.9.1 upgrade.

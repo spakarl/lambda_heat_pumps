@@ -300,7 +300,9 @@ HC_SENSORS: tuple[LambdaSensorDescription, ...] = (
     _temperature("room_device_temperature"),
     _temperature("set_flow_line_temperature"),
     _state("operating_mode"),
-    _temperature("flow_line_temperature_setpoint"),
+    # Firmware 3+ repurposes this same register (see heating_circuit.py); on
+    # those versions only target_temp_flow_line below is served.
+    _temperature("flow_line_temperature_setpoint", firmware_versions=("1-2",)),
     _temperature("target_temp_flow_line", firmware_version=3),
     _temperature("set_flow_line_offset_temperature"),
     _temperature("target_room_temperature"),

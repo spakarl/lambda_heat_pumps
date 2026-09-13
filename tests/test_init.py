@@ -206,6 +206,45 @@ async def test_a_register_its_firmware_withdrew_is_not_modelled(
     )
 
 
+async def test_a_register_that_changed_meaning_is_not_double_modelled(
+    hass: HomeAssistant, controller: Controller
+) -> None:
+    """HC register 7 means something different before and after firmware 3.
+
+    Below firmware 3 it is the writable setpoint the circuit was asked for
+    (`flow_line_temperature_setpoint`); from firmware 3 on the controller
+    repurposes the same address for the read-only value it actually acts on
+    (`target_temp_flow_line`). Both used to be modelled unconditionally, so on
+    firmware 3+ they collided on the same register - GitHub Issue #112.
+    """
+    registry = er.async_get(hass)
+
+    # V0.0.8-3K is version 6, at/after the register's repurposing on firmware 3.
+    entry = await setup_entry(hass, controller, legacy=True)
+    assert registry.async_get_entity_id(
+        "sensor", DOMAIN, "eu08l_hc1_target_temp_flow_line"
+    )
+    assert not registry.async_get_entity_id(
+        "sensor", DOMAIN, "eu08l_hc1_flow_line_temperature_setpoint"
+    )
+    await hass.config_entries.async_remove(entry.entry_id)
+    await hass.async_block_till_done()
+
+    # V0.0.4-3K is version 2, before the repurposing.
+    data = entry_data(legacy=True) | {CONF_FIRMWARE_VERSION: "V0.0.4-3K"}
+    older = MockConfigEntry(domain=DOMAIN, version=ENTRY_VERSION, data=data)
+    older.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(older.entry_id)
+    await hass.async_block_till_done()
+
+    assert registry.async_get_entity_id(
+        "sensor", DOMAIN, "eu08l_hc1_flow_line_temperature_setpoint"
+    )
+    assert not registry.async_get_entity_id(
+        "sensor", DOMAIN, "eu08l_hc1_target_temp_flow_line"
+    )
+
+
 async def test_a_register_with_nothing_behind_it_reads_unknown(
     hass: HomeAssistant, controller: Controller
 ) -> None:

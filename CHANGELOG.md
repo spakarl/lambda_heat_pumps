@@ -9,6 +9,10 @@
 
 > **📚 Documentation**: A German documentation is currently being built at [https://guidojeuken-6512.github.io/lambda_heat_pumps](https://guidojeuken-6512.github.io/lambda_heat_pumps)
 
+### [3.5.5] - 2026-09-12
+
+Fixed a register conflict reported against firmware 3+: heating-circuit register 7 is repurposed on firmware 3 from the writable setpoint request to the read-only value the controller actually acts on, but the old writable sensor (`flow_line_temperature_setpoint`) had no upper firmware bound, so it kept being created alongside the new read-only one (`target_temp_flow_line`) — both reading and writing the same address. `flow_line_temperature_setpoint` is now restricted to firmware 1-2, the range it still means what its name says. See [CHANGELOG_ALL_CHANGES.md](CHANGELOG_ALL_CHANGES.md) for details. [Issue #112](https://github.com/GuidoJeuken-6512/lambda_heat_pumps/issues/112)
+
 ### [3.5.4] - 2026-09-09
 
 Fixed another Home Assistant deprecation warning, found by auditing the real system log of two live installations after a Home Assistant 2026.9.1 upgrade: `device_registry.async_get_device()`, used to resolve a sub-device's parent for `via_device_id`, is deprecated and scheduled for removal in Home Assistant 2027.8.0. Replaced with `async_get_device_by_identifier()`. Verified against real hardware — the full test suite, a live remove/recreate of the config entry, and an end-to-end run of the actual config flow all pass unchanged. See [CHANGELOG_ALL_CHANGES.md](CHANGELOG_ALL_CHANGES.md) for details.
@@ -31,6 +35,10 @@ Adopted a ground-up rewrite of the integration (PR #115): the Modbus layer moves
 <!-- lang:de -->
 
 > **📚 Dokumentation**: Eine deutsche Dokumentation wird derzeit unter [https://guidojeuken-6512.github.io/lambda_heat_pumps](https://guidojeuken-6512.github.io/lambda_heat_pumps) aufgebaut
+
+### [3.5.5] - 2026-09-12
+
+Einen gemeldeten Register-Konflikt ab Firmware 3 behoben: Heizkreis-Register 7 wird ab Firmware 3 umgewidmet — vom schreibbaren angeforderten Sollwert zum read-only Wert, den der Regler tatsächlich verwendet — aber der alte schreibbare Sensor (`flow_line_temperature_setpoint`) hatte keine obere Firmware-Grenze und wurde weiterhin parallel zum neuen read-only Sensor (`target_temp_flow_line`) angelegt — beide lesen und schreiben dieselbe Adresse. `flow_line_temperature_setpoint` ist jetzt auf Firmware 1-2 begrenzt, den Bereich, in dem der Name noch stimmt. Details siehe [CHANGELOG_ALL_CHANGES.md](CHANGELOG_ALL_CHANGES.md). [Issue #112](https://github.com/GuidoJeuken-6512/lambda_heat_pumps/issues/112)
 
 ### [3.5.4] - 2026-09-09
 
