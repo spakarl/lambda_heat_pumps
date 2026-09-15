@@ -1,6 +1,9 @@
 {
   "domain": "lambda_heat_pumps",
   "name": "Lambda Heat Pumps",
+  "after_dependencies": [
+    "recorder"
+  ],
   "codeowners": [
     "@GuidoJeuken-6512"
   ],
@@ -24,5 +27,5 @@
   "requirements": [
     "modbus-connection[tmodbus]>=4.8.1"
   ],
-  "version": "3.5.5"
+  "version": "3.5.6"
 }

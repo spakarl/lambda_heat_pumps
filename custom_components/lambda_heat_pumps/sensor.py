@@ -24,6 +24,7 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from functools import cached_property
 
+from homeassistant.components.recorder.statistics import get_last_statistics
 from homeassistant.components.sensor import (
     RestoreSensor,
     SensorDeviceClass,
@@ -41,6 +42,7 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+from homeassistant.helpers.recorder import get_instance
 
 from .const import (
     ATTR_APPLIED_OFFSET,
@@ -691,22 +693,51 @@ class LambdaCapacityLimitSensor(LambdaRegisterEntity, SensorEntity):
         return self._read()
 
 
-async def _restored_value(entity: RestoreSensor) -> float | None:
+@dataclass(frozen=True)
+class _Restored:
+    """A counter's last value, and whether its own state can be trusted for anything else.
+
+    ``trustworthy`` is False only when even the plain last state was unusable
+    (e.g. "unavailable" from an old integration version unloading) and the value
+    had to come from long-term statistics instead — which holds no attributes,
+    so `_applied_offset` cannot be read off it the normal way.
+    """
+
+    value: float
+    trustworthy: bool
+
+
+async def _restored_value(entity: RestoreSensor) -> _Restored | None:
     """What this counter was at before the restart.
 
     A sensor stores its value as typed extra data, which is where it is read
     from. An installation coming from a version that stored only the recorded
     state has none of that, so fall back to the state itself — otherwise
     upgrading would silently start every cumulative counter again at zero.
+
+    The state itself can be "unavailable" for one write - exactly what happens
+    to every entity of an old integration version while it unloads, right
+    before a new version's entities try to restore from it. Long-term
+    statistics are only ever recorded from real values, so the last one still
+    holds what this counter actually was, even across that gap - but carries
+    no attributes, so the caller cannot trust it for anything but the number.
     """
     if (last := await entity.async_get_last_sensor_data()) is not None:
         if last.native_value is not None:
-            return float(last.native_value)
+            return _Restored(float(last.native_value), trustworthy=True)
     if (state := await entity.async_get_last_state()) is not None:
         try:
-            return float(state.state)
+            return _Restored(float(state.state), trustworthy=True)
         except (TypeError, ValueError):
-            return None  # it was unknown or unavailable when it was written
+            pass  # unknown/unavailable when written - fall through
+
+    if "recorder" not in entity.hass.config.components:
+        return None
+    stats = await get_instance(entity.hass).async_add_executor_job(
+        get_last_statistics, entity.hass, 1, entity.entity_id, True, {"state"}
+    )
+    if (rows := stats.get(entity.entity_id)) and rows[0].get("state") is not None:
+        return _Restored(float(rows[0]["state"]), trustworthy=False)
     return None
 
 
@@ -752,9 +783,18 @@ class LambdaCounterSensor(LambdaEntity, RestoreSensor):
         """Pick up where the last run left off, and arm the rollover."""
         await super().async_added_to_hass()
 
-        if (restored := await _restored_value(self)) is not None:
-            self._value = restored
-        if (state := await self.async_get_last_state()) is not None:
+        restored = await _restored_value(self)
+        if restored is not None:
+            self._value = restored.value
+        if restored is not None and not restored.trustworthy:
+            # Its own last state was unavailable too, so the attribute that
+            # would normally carry this is gone - assume today's configured
+            # offset was already in the value recovered above, so
+            # _apply_offset() below does not add it a second time.
+            self._applied_offset = self.coordinator.file_config.offset(
+                self._index, self.entity_description.key
+            )
+        elif (state := await self.async_get_last_state()) is not None:
             self._applied_offset = float(
                 state.attributes.get(ATTR_APPLIED_OFFSET, 0.0)
             )
@@ -848,7 +888,7 @@ class YesterdayCycleSensor(LambdaEntity, RestoreSensor):
         """Yesterday is still yesterday after a restart."""
         await super().async_added_to_hass()
         if (restored := await _restored_value(self)) is not None:
-            self._value = restored
+            self._value = restored.value
 
     @callback
     def set_value(self, value: float) -> None:

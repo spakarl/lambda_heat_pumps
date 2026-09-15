@@ -253,6 +253,19 @@ async def test_a_day_ends(hass: HomeAssistant, controller: Controller) -> None:
     assert state_of(hass, "eu08l_hp1_hot_water_cycling_total") == "1"
 
 
+async def test_yesterday_survives_a_restart(
+    hass: HomeAssistant, controller: Controller
+) -> None:
+    """What yesterday reached is not lost across a restart either."""
+    mock_restore_cache(
+        hass, (State("sensor.eu08l_hp1_hot_water_cycling_yesterday", "7"),)
+    )
+    entry = await setup_entry(hass, controller, legacy=True)
+    await enable_sensors(hass, entry, "eu08l_hp1_hot_water_cycling_yesterday")
+
+    assert state_of(hass, "eu08l_hp1_hot_water_cycling_yesterday") == "7"
+
+
 async def test_a_period_that_ends_does_not_end_the_others(
     hass: HomeAssistant, controller: Controller
 ) -> None:

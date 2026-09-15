@@ -9,6 +9,10 @@
 
 > **📚 Documentation**: A German documentation is currently being built at [https://guidojeuken-6512.github.io/lambda_heat_pumps](https://guidojeuken-6512.github.io/lambda_heat_pumps)
 
+### [3.5.6] - 2026-09-15
+
+Fixed a data-loss bug found via a live v2.8.x→3.5.x upgrade on real hardware: every lifetime total counter (`heating_energy_total`, `heating_thermal_energy_total`, `hot_water_energy_total`, `stby_energy_total`, and their cycling-count equivalents) reset to zero (or the configured offset alone) instead of continuing from its accumulated value, because the old version's entities go `unavailable` while it unloads for the upgrade, and the new `RestoreSensor`-based restore only ever tried the entity's own last state — with no fallback once that state was `"unavailable"`. `_restored_value()` now falls back to Home Assistant's own long-term statistics, which still hold the real last value from before the gap; a configured offset is treated as already included in a value recovered this way, instead of being added a second time on top. A second bug in the same change — the `_cycling_yesterday` sensors crashing on restore because their own caller wasn't updated for the new return shape — was caught by the same live test and fixed alongside it. Verified against real hardware: every lifetime and cycling total (incl. five different configured offsets) survived the actual upgrade with its exact prior value, and the previously-crashing `_cycling_yesterday` sensors came back healthy after redeploying the fix.
+
 ### [3.5.5] - 2026-09-12
 
 Fixed a register conflict reported against firmware 3+: heating-circuit register 7 is repurposed on firmware 3 from the writable setpoint request to the read-only value the controller actually acts on, but the old writable sensor (`flow_line_temperature_setpoint`) had no upper firmware bound, so it kept being created alongside the new read-only one (`target_temp_flow_line`) — both reading and writing the same address. `flow_line_temperature_setpoint` is now restricted to firmware 1-2, the range it still means what its name says. See [CHANGELOG_ALL_CHANGES.md](CHANGELOG_ALL_CHANGES.md) for details. [Issue #112](https://github.com/GuidoJeuken-6512/lambda_heat_pumps/issues/112)
@@ -35,6 +39,10 @@ Adopted a ground-up rewrite of the integration (PR #115): the Modbus layer moves
 <!-- lang:de -->
 
 > **📚 Dokumentation**: Eine deutsche Dokumentation wird derzeit unter [https://guidojeuken-6512.github.io/lambda_heat_pumps](https://guidojeuken-6512.github.io/lambda_heat_pumps) aufgebaut
+
+### [3.5.6] - 2026-09-15
+
+Einen Datenverlust-Bug behoben, gefunden bei einem echten v2.8.x→3.5.x-Upgrade auf realer Hardware: Jeder Lifetime-Gesamtzähler (`heating_energy_total`, `heating_thermal_energy_total`, `hot_water_energy_total`, `stby_energy_total` sowie die entsprechenden Zyklus-Zähler) fiel beim Upgrade auf null (bzw. nur den konfigurierten Offset) zurück, statt beim akkumulierten Wert weiterzuzählen — weil die Entities der alten Version beim Entladen für den Versionssprung kurz `unavailable` werden, und die neue, auf `RestoreSensor` basierende Wiederherstellung nur den letzten eigenen State versucht hat, ohne Fallback, wenn dieser `"unavailable"` war. `_restored_value()` greift jetzt zusätzlich auf Home Assistants eigene Langzeitstatistik zurück, die den echten letzten Wert trotz der Lücke noch hält; ein konfigurierter Offset wird dabei als bereits enthalten behandelt, statt ein zweites Mal draufaddiert zu werden. Ein zweiter Bug in derselben Änderung — die `_cycling_yesterday`-Sensoren stürzten beim Wiederherstellen ab, weil ihr eigener Aufrufer nicht auf das neue Rückgabeformat umgestellt war — wurde durch denselben Live-Test gefunden und gleich mitbehoben. Gegen echte Hardware verifiziert: Alle Lifetime- und Zyklus-Zähler (inkl. fünf verschiedener konfigurierter Offsets) haben den echten Upgrade mit exakt ihrem vorherigen Wert überstanden, und die zuvor abstürzenden `_cycling_yesterday`-Sensoren liefen nach dem Redeploy des Fixes wieder sauber.
 
 ### [3.5.5] - 2026-09-12
 
