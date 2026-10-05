@@ -1,6 +1,6 @@
 {
   "domain": "lambda_heat_pumps",
-  "name": "Lambda Heat Pumps",
+  "name": "Lambda Heat Pumps – Karlheinz Fork",
   "codeowners": ["@GuidoJeuken-6512"],
   "config_flow": true,
   "dhcp": [
