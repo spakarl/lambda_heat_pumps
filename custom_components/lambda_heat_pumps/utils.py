@@ -1056,6 +1056,13 @@ async def increment_cycling_counter(
         use_legacy_modbus_names: Use legacy entity naming
     """
 
+    # Callers pass the user-facing config-entry name (for example
+    # "Lambda EU15L"), while sensor creation stores the normalized prefix
+    # ("lambdaeu15l") in the unique_id. Normalize here as well so the
+    # registry lookup and in-memory cycling_entities cache resolve the
+    # existing entity instead of falling back to a detached state update.
+    name_prefix = normalize_name_prefix(name_prefix)
+
     device_prefix = f"hp{hp_index}"
     
     # Liste aller Sensor-Typen, die erhöht werden sollen
@@ -1638,6 +1645,10 @@ async def increment_energy_consumption_counter(
         energy_offsets: Optional dict with energy offsets from config
         sensor_type: "electrical" (default) or "thermal"
     """
+    # Keep lookups consistent with sensor creation. The coordinator passes the
+    # raw config-entry name, but unique_ids use the normalized prefix.
+    name_prefix = normalize_name_prefix(name_prefix)
+
     if mode not in ENERGY_CONSUMPTION_MODES:
         _LOGGER.error("Invalid energy consumption mode: %s", mode)
         return
